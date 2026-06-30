@@ -1,0 +1,73 @@
+@import url("https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap");
+
+html,
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0d0d0d;
+    font-family: "Press Start 2P", cursive;
+}
+
+/* CRT Scanlines */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.04),
+        rgba(255, 255, 255, 0.04) 2px,
+        transparent 2px,
+        transparent 4px
+    );
+    opacity: 0.2;
+}
+
+.pixel-grid {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+}
+
+.center-button {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 5;
+}
+
+.glow {
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        filter: drop-shadow(0 0 6px #00ff88);
+    }
+    50% {
+        filter: drop-shadow(0 0 20px #00ff88);
+    }
+}
+
+.floating-box {
+    position: absolute;
+    width: 140px;
+    height: 90px;
+    opacity: 0.75;
+    animation: float 6s ease-in-out infinite;
+}
+
+@keyframes float {
+    0%,
+    100% {
+        transform: translateY(0px);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
+}
