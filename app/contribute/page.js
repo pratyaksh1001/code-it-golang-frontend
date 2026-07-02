@@ -8,9 +8,11 @@ import { useRouter } from "next/navigation";
 
 export default function CreateProblem() {
     const router = useRouter();
+
     const [mounted, setMounted] = useState(false);
     const [username, setUsername] = useState("Player");
 
+    const [title, setTitle] = useState("");
     const [description, setDescription] = useState("");
     const [sampleInput, setSampleInput] = useState("");
     const [sampleOutput, setSampleOutput] = useState("");
@@ -22,17 +24,21 @@ export default function CreateProblem() {
         setUsername(Cookies.get("username") || "Player");
         setMounted(true);
     }, []);
-    async function create_problem() {
-        var data = {};
-        data["tags"] = tags;
-        data["token"] = Cookies.get("token");
-        data["output"] = sampleOutput;
-        data["input"] = sampleInput;
-        data["question"] = description;
 
-        var res = await api.post("/question", data);
+    async function create_problem() {
+        const data = {
+            title: title,
+            question: description,
+            input: sampleInput,
+            output: sampleOutput,
+            tags: tags,
+            token: Cookies.get("token"),
+        };
+
+        const res = await api.post("/question", data);
+
         if (!res.data.created) {
-            console.log("error creating question");
+            console.log("Error creating question");
         } else {
             router.push("/home");
         }
@@ -126,7 +132,6 @@ export default function CreateProblem() {
                 }}
             >
                 {/* Left Panel */}
-
                 <div
                     className="nes-container is-dark with-title"
                     style={{
@@ -138,6 +143,20 @@ export default function CreateProblem() {
                     }}
                 >
                     <p className="title">CREATE PROBLEM</p>
+
+                    <div className="nes-field">
+                        <label>Title</label>
+
+                        <input
+                            type="text"
+                            className="nes-input is-dark"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Enter problem title"
+                        />
+                    </div>
+
+                    <br />
 
                     <div className="nes-field">
                         <label>Description</label>
@@ -235,7 +254,6 @@ export default function CreateProblem() {
                     </button>
                 </div>
                 {/* Right Panel */}
-
                 <div
                     className="nes-container is-dark with-title"
                     style={{
@@ -248,11 +266,24 @@ export default function CreateProblem() {
                 >
                     <p className="title">LIVE PREVIEW</p>
 
+                    <h1
+                        className="nes-text is-success"
+                        style={{
+                            marginBottom: "20px",
+                            wordBreak: "break-word",
+                        }}
+                    >
+                        {title || "Problem Title"}
+                    </h1>
+
+                    <hr />
+
                     <h2 className="nes-text is-success">Problem Description</h2>
 
                     <p
                         style={{
                             whiteSpace: "pre-wrap",
+                            wordBreak: "break-word",
                         }}
                     >
                         {description || "Start writing your problem..."}
@@ -286,7 +317,7 @@ export default function CreateProblem() {
 
                     <hr />
 
-                    <h3>Tags</h3>
+                    <h3 className="nes-text is-error">Tags</h3>
 
                     <div
                         style={{
@@ -306,7 +337,7 @@ export default function CreateProblem() {
                         ) : (
                             tags.map((t) => (
                                 <span key={t} className="nes-btn is-primary">
-                                    <span className="is-success">{t}</span>
+                                    {t}
                                 </span>
                             ))
                         )}
