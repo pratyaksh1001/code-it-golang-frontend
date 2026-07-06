@@ -14,6 +14,16 @@ const Editor = dynamic(() => import("@monaco-editor/react"), {
 export default function ProblemPage() {
     const router = useRouter();
     const { id } = useParams();
+    const [showTestcaseForm, setShowTestcaseForm] = useState(false);
+    const [testcaseInput, setTestcaseInput] = useState("");
+    const [testcaseOutput, setTestcaseOutput] = useState("");
+    const [testcaseSubmitting, setTestcaseSubmitting] = useState(false);
+    const [popupOpen, setPopupOpen] = useState(false);
+
+    const [popup, setPopup] = useState({
+        success: false,
+        message: "",
+    });
 
     const [mounted, setMounted] = useState(false);
     const [username, setUsername] = useState("Player");
@@ -27,7 +37,16 @@ export default function ProblemPage() {
     // Editor
     const [language, setLanguage] = useState("python");
     const [theme, setTheme] = useState("vs-dark");
+
+    // Store code separately for each language
+    const [codes, setCodes] = useState({
+        python: "",
+        go: "",
+        javascript: "",
+    });
+
     const [code, setCode] = useState("");
+    const [score, setScore] = useState("");
 
     // Console
     const [consoleOpen, setConsoleOpen] = useState(true);
@@ -47,6 +66,15 @@ export default function ProblemPage() {
         loadQuestion();
     }, [id]);
 
+    useEffect(() => {
+        if (!id || !mounted) return;
+
+        loadDriverCode(language);
+    }, [language]);
+
+    useEffect(() => {
+        setCode(codes[language]);
+    }, [codes, language]);
     async function loadQuestion() {
         try {
             const res = await api.get(`/problem/${id}`);
@@ -56,17 +84,161 @@ export default function ProblemPage() {
             setSampleInput(res.data.input);
             setSampleOutput(res.data.output);
 
-            if (res.data.code) {
-                setCode(res.data.code);
-            }
+            await loadDriverCode(language);
         } catch (err) {
             console.log(err);
+            setConsoleText("Failed to load problem.");
         }
     }
 
-    async function runCode() {}
+    async function loadDriverCode(lang) {
+        try {
+            // Already loaded for this language
+            if (codes[lang] !== "") {
+                setCode(codes[lang]);
+                return;
+            }
 
-    async function submitCode() {}
+            const res = await api.post("/driver", {
+                qid: Number(id),
+                language: lang,
+            });
+
+            const driverCode = res.data.code || "";
+
+            setCodes((prev) => ({
+                ...prev,
+                [lang]: driverCode,
+            }));
+
+            setCode(driverCode);
+        } catch (err) {
+            console.log(err);
+            setConsoleText("Failed to load driver code.");
+        }
+    }
+
+    async function runCode() {
+        try {
+            setRunning(true);
+
+            const res = await api.post("/run", {
+                qid: Number(id),
+                language: language,
+                code: code,
+                token: Cookies.get("token"),
+            });
+
+            const data = res.data;
+
+            // Clear previous score by default
+            setScore("");
+
+            if (data.compile_error) {
+                setConsoleText(data.compile_error);
+            } else {
+                if (
+                    typeof data.score !== "undefined" &&
+                    typeof data.total !== "undefined"
+                ) {
+                    setScore(`Score: ${data.score}/${data.total}`);
+                }
+
+                setConsoleText(data.error || "");
+            }
+        } catch (err) {
+            console.log(err);
+
+            const data = err.response?.data;
+
+            setScore("");
+
+            if (data?.compile_error) {
+                setConsoleText(data.compile_error);
+            } else if (data?.error) {
+                if (
+                    typeof data.score !== "undefined" &&
+                    typeof data.total !== "undefined"
+                ) {
+                    setScore(`Score: ${data.score}/${data.total}`);
+                }
+
+                setConsoleText(data.error);
+            } else {
+                setConsoleText("Failed to connect to backend.");
+            }
+        } finally {
+            setRunning(false);
+        }
+    }
+
+    async function submitCode() {
+        try {
+            setSubmitting(true);
+
+            const res = await api.post("/submit", {
+                qid: Number(id),
+                language: language,
+                code: code,
+            });
+
+            setConsoleText(
+                typeof res.data === "string"
+                    ? res.data
+                    : JSON.stringify(res.data, null, 2),
+            );
+        } catch (err) {
+            console.log(err);
+
+            setConsoleText(
+                err.response?.data?.message ||
+                    "An error occurred while submitting.",
+            );
+        } finally {
+            setSubmitting(false);
+        }
+    }
+
+    async function submitTestcase() {
+        try {
+            setTestcaseSubmitting(true);
+
+            const res = await api.post("/testcase", {
+                qid: Number(id),
+                input: testcaseInput,
+                output: testcaseOutput,
+                token: Cookies.get("token"),
+            });
+
+            if (res.data.created) {
+                setPopup({
+                    success: true,
+                    message: "Test case contributed successfully!",
+                });
+
+                setShowTestcaseForm(false);
+                setTestcaseInput("");
+                setTestcaseOutput("");
+            } else {
+                setPopup({
+                    success: false,
+                    message:
+                        "Incorrect test case. Please verify your input/output.",
+                });
+            }
+
+            setPopupOpen(true);
+        } catch (err) {
+            setPopup({
+                success: false,
+                message: "Failed to connect to server.",
+            });
+
+            setPopupOpen(true);
+        } finally {
+            setTestcaseSubmitting(false);
+        }
+    }
 
     if (!mounted) return null;
 
@@ -93,12 +265,20 @@ export default function ProblemPage() {
                     flexShrink: 0,
                 }}
             >
-                <h2 className="nes-text is-success">CODE-IT</h2>
+                <h2
+                    className="nes-text is-success"
+                    style={{
+                        margin: 0,
+                    }}
+                >
+                    CODE-IT
+                </h2>
 
                 <div
                     style={{
                         display: "flex",
                         gap: "35px",
+                        alignItems: "center",
                     }}
                 >
                     <Link
@@ -112,7 +292,7 @@ export default function ProblemPage() {
                     </Link>
 
                     <Link
-                        href="/problems"
+                        href="/question_list"
                         className="nes-text is-warning"
                         style={{
                             textDecoration: "none",
@@ -122,13 +302,23 @@ export default function ProblemPage() {
                     </Link>
 
                     <Link
-                        href="/contribute"
+                        href="/contests"
                         className="nes-text is-success"
                         style={{
                             textDecoration: "none",
                         }}
                     >
-                        Contribute
+                        Contests
+                    </Link>
+
+                    <Link
+                        href="/leaderboard"
+                        className="nes-text is-error"
+                        style={{
+                            textDecoration: "none",
+                        }}
+                    >
+                        Leaderboard
                     </Link>
                 </div>
 
@@ -198,9 +388,84 @@ export default function ProblemPage() {
                     >
                         {sampleOutput}
                     </pre>
+
+                    <hr />
+
+                    <button
+                        className="nes-btn is-primary"
+                        style={{
+                            marginTop: "20px",
+                        }}
+                        onClick={() => setShowTestcaseForm(!showTestcaseForm)}
+                    >
+                        {showTestcaseForm ? "Cancel" : "Contribute Test Case"}
+                    </button>
+
+                    {showTestcaseForm && (
+                        <div
+                            className="nes-container is-rounded"
+                            style={{
+                                marginTop: "25px",
+                            }}
+                        >
+                            <h3 className="nes-text is-success">
+                                Contribute Test Case
+                            </h3>
+
+                            <div
+                                className="nes-field"
+                                style={{
+                                    marginTop: "20px",
+                                }}
+                            >
+                                <label>Sample Input</label>
+
+                                <textarea
+                                    className="nes-textarea is-dark"
+                                    rows={6}
+                                    value={testcaseInput}
+                                    onChange={(e) =>
+                                        setTestcaseInput(e.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <div
+                                className="nes-field"
+                                style={{
+                                    marginTop: "20px",
+                                }}
+                            >
+                                <label>Sample Output</label>
+
+                                <textarea
+                                    className="nes-textarea is-dark"
+                                    rows={6}
+                                    value={testcaseOutput}
+                                    onChange={(e) =>
+                                        setTestcaseOutput(e.target.value)
+                                    }
+                                />
+                            </div>
+
+                            <button
+                                className="nes-btn is-success"
+                                style={{
+                                    marginTop: "25px",
+                                }}
+                                onClick={submitTestcase}
+                                disabled={testcaseSubmitting}
+                            >
+                                {testcaseSubmitting
+                                    ? "Submitting..."
+                                    : "Submit Test Case"}
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 {/* RIGHT PANEL */}
+
                 <div
                     className="nes-container is-dark with-title"
                     style={{
@@ -210,8 +475,6 @@ export default function ProblemPage() {
                         padding: "20px",
                     }}
                 >
-                    <p className="title">CODE EDITOR</p>
-
                     {/* Toolbar */}
 
                     <div
@@ -231,8 +494,6 @@ export default function ProblemPage() {
                                 alignItems: "center",
                             }}
                         >
-                            {/* Language */}
-
                             <div className="nes-select is-dark">
                                 <select
                                     value={language}
@@ -249,8 +510,6 @@ export default function ProblemPage() {
                                     </option>
                                 </select>
                             </div>
-
-                            {/* Theme */}
 
                             <div className="nes-select is-dark">
                                 <select
@@ -292,8 +551,6 @@ export default function ProblemPage() {
                         </div>
                     </div>
 
-                    {/* Editor */}
-
                     <div
                         style={{
                             flex: 1,
@@ -306,7 +563,16 @@ export default function ProblemPage() {
                             language={language}
                             theme={theme}
                             value={code}
-                            onChange={(value) => setCode(value || "")}
+                            onChange={(value) => {
+                                const newCode = value || "";
+
+                                setCode(newCode);
+
+                                setCodes((prev) => ({
+                                    ...prev,
+                                    [language]: newCode,
+                                }));
+                            }}
                             options={{
                                 minimap: {
                                     enabled: false,
@@ -332,7 +598,17 @@ export default function ProblemPage() {
                             marginTop: "15px",
                         }}
                     >
-                        <h3 className="nes-text is-warning">Console</h3>
+                        <div
+                            style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "25px",
+                            }}
+                        >
+                            <h3 className="nes-text is-warning">Console</h3>
+
+                            <span className="nes-text is-success">{score}</span>
+                        </div>
 
                         <button
                             className="nes-btn is-primary"

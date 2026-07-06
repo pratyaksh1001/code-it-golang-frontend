@@ -98,46 +98,62 @@ export default function Problems() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    flexShrink: 0,
                     padding: "18px 24px",
+                    flexShrink: 0,
                 }}
             >
-                <h2 className="nes-text is-success">CODE-IT</h2>
+                <h2
+                    className="nes-text is-success"
+                    style={{
+                        margin: 0,
+                    }}
+                >
+                    CODE-IT
+                </h2>
 
                 <div
                     style={{
                         display: "flex",
-                        gap: "30px",
+                        gap: "35px",
+                        alignItems: "center",
                     }}
                 >
                     <Link
                         href="/home"
                         className="nes-text is-primary"
-                        style={{ textDecoration: "none" }}
+                        style={{
+                            textDecoration: "none",
+                        }}
                     >
                         Home
                     </Link>
 
                     <Link
-                        href="/problems"
+                        href="/question_list"
                         className="nes-text is-warning"
-                        style={{ textDecoration: "none" }}
+                        style={{
+                            textDecoration: "none",
+                        }}
                     >
                         Problems
                     </Link>
 
                     <Link
-                        href="/contribute"
+                        href="/contests"
                         className="nes-text is-success"
-                        style={{ textDecoration: "none" }}
+                        style={{
+                            textDecoration: "none",
+                        }}
                     >
-                        Contribute
+                        Contests
                     </Link>
 
                     <Link
                         href="/leaderboard"
                         className="nes-text is-error"
-                        style={{ textDecoration: "none" }}
+                        style={{
+                            textDecoration: "none",
+                        }}
                     >
                         Leaderboard
                     </Link>

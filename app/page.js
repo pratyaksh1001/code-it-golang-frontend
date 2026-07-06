@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function Home() {
     const boxes = [
         { top: "8%", left: "10%" },
@@ -25,7 +27,9 @@ export default function Home() {
             ))}
 
             <div className="center-button">
-                <button className="nes-btn is-success glow">JUMP IN</button>
+                <Link href={"/home"} className="nes-btn is-success glow">
+                    JUMP IN
+                </Link>
             </div>
         </main>
     );
