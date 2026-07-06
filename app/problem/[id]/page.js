@@ -47,6 +47,7 @@ export default function ProblemPage() {
 
     const [code, setCode] = useState("");
     const [score, setScore] = useState("");
+    const [runtime, setRuntime] = useState("");
 
     // Console
     const [consoleOpen, setConsoleOpen] = useState(true);
@@ -122,47 +123,60 @@ export default function ProblemPage() {
         try {
             setRunning(true);
 
-            const res = await api.post("/run", {
+            const endpoint = `/run_${language}`;
+
+            const res = await api.post(endpoint, {
                 qid: Number(id),
-                language: language,
-                code: code,
+                language,
+                code,
                 token: Cookies.get("token"),
             });
 
             const data = res.data;
 
-            // Clear previous score by default
             setScore("");
+            setRuntime("");
+
+            if (
+                typeof data.score !== "undefined" &&
+                typeof data.total !== "undefined"
+            ) {
+                setScore(`Score: ${data.score}/${data.total}`);
+            }
+
+            if (typeof data.time_taken !== "undefined") {
+                setRuntime(`${data.time_taken}`);
+            }
 
             if (data.compile_error) {
                 setConsoleText(data.compile_error);
+            } else if (data.error) {
+                setConsoleText(data.error);
             } else {
-                if (
-                    typeof data.score !== "undefined" &&
-                    typeof data.total !== "undefined"
-                ) {
-                    setScore(`Score: ${data.score}/${data.total}`);
-                }
-
-                setConsoleText(data.error || "");
+                setConsoleText("");
             }
         } catch (err) {
-            console.log(err);
+            console.error(err);
 
             const data = err.response?.data;
 
             setScore("");
+            setRuntime("");
+
+            if (
+                typeof data?.score !== "undefined" &&
+                typeof data?.total !== "undefined"
+            ) {
+                setScore(`Score: ${data.score}/${data.total}`);
+            }
+
+            if (typeof data?.time_taken !== "undefined") {
+                setRuntime(`${data.time_taken}`);
+            }
 
             if (data?.compile_error) {
                 setConsoleText(data.compile_error);
             } else if (data?.error) {
-                if (
-                    typeof data.score !== "undefined" &&
-                    typeof data.total !== "undefined"
-                ) {
-                    setScore(`Score: ${data.score}/${data.total}`);
-                }
-
                 setConsoleText(data.error);
             } else {
                 setConsoleText("Failed to connect to backend.");
@@ -176,24 +190,65 @@ export default function ProblemPage() {
         try {
             setSubmitting(true);
 
-            const res = await api.post("/submit", {
+            const endpoint = `/run_${language}`;
+
+            const res = await api.post(endpoint, {
                 qid: Number(id),
-                language: language,
-                code: code,
+                language,
+                code,
+                token: Cookies.get("token"),
+                submission: true,
             });
 
-            setConsoleText(
-                typeof res.data === "string"
-                    ? res.data
-                    : JSON.stringify(res.data, null, 2),
-            );
-        } catch (err) {
-            console.log(err);
+            const data = res.data;
 
-            setConsoleText(
-                err.response?.data?.message ||
-                    "An error occurred while submitting.",
-            );
+            setScore("");
+            setRuntime("");
+
+            if (
+                typeof data.score !== "undefined" &&
+                typeof data.total !== "undefined"
+            ) {
+                setScore(`Score: ${data.score}/${data.total}`);
+            }
+
+            if (typeof data.time_taken !== "undefined") {
+                setRuntime(`${data.time_taken}`);
+            }
+
+            if (data.compile_error) {
+                setConsoleText(data.compile_error);
+            } else if (data.error) {
+                setConsoleText(data.error);
+            } else {
+                setConsoleText("");
+            }
+        } catch (err) {
+            console.error(err);
+
+            const data = err.response?.data;
+
+            setScore("");
+            setRuntime("");
+
+            if (
+                typeof data?.score !== "undefined" &&
+                typeof data?.total !== "undefined"
+            ) {
+                setScore(`Score: ${data.score}/${data.total}`);
+            }
+
+            if (typeof data?.time_taken !== "undefined") {
+                setRuntime(`Runtime: ${data.time_taken} ms`);
+            }
+
+            if (data?.compile_error) {
+                setConsoleText(data.compile_error);
+            } else if (data?.error) {
+                setConsoleText(data.error);
+            } else {
+                setConsoleText("Failed to connect to backend.");
+            }
         } finally {
             setSubmitting(false);
         }
@@ -250,9 +305,10 @@ export default function ProblemPage() {
                 height: "100vh",
                 display: "flex",
                 flexDirection: "column",
-                padding: "20px",
-                gap: "20px",
+                padding: "14px",
+                gap: "14px",
                 overflow: "hidden",
+                boxSizing: "border-box",
             }}
         >
             <nav
@@ -261,7 +317,7 @@ export default function ProblemPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "18px 24px",
+                    padding: "10px 18px",
                     flexShrink: 0,
                 }}
             >
@@ -269,6 +325,8 @@ export default function ProblemPage() {
                     className="nes-text is-success"
                     style={{
                         margin: 0,
+                        fontSize: "1.45rem",
+                        letterSpacing: "1px",
                     }}
                 >
                     CODE-IT
@@ -277,8 +335,9 @@ export default function ProblemPage() {
                 <div
                     style={{
                         display: "flex",
-                        gap: "35px",
                         alignItems: "center",
+                        gap: "24px",
+                        fontSize: ".9rem",
                     }}
                 >
                     <Link
@@ -322,16 +381,24 @@ export default function ProblemPage() {
                     </Link>
                 </div>
 
-                <button className="nes-btn is-primary">{username}</button>
+                <button
+                    className="nes-btn is-primary"
+                    style={{
+                        padding: "6px 14px",
+                    }}
+                >
+                    {username}
+                </button>
             </nav>
 
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns: "2fr 3fr",
-                    gap: "20px",
+                    gridTemplateColumns: "35% 65%",
+                    gap: "14px",
                     flex: 1,
                     overflow: "hidden",
+                    minHeight: 0,
                 }}
             >
                 {/* LEFT PANEL */}
@@ -339,62 +406,115 @@ export default function ProblemPage() {
                 <div
                     className="nes-container is-dark with-title"
                     style={{
-                        padding: "40px",
+                        padding: "22px",
                         overflowY: "auto",
+                        overflowX: "hidden",
+                        fontSize: ".92rem",
                     }}
                 >
-                    <p className="title">QUESTION</p>
+                    <p
+                        className="title"
+                        style={{
+                            fontSize: ".9rem",
+                        }}
+                    ></p>
 
                     <h2
                         className="nes-text is-success"
                         style={{
-                            marginBottom: "25px",
+                            marginBottom: "18px",
+                            fontSize: "1.5rem",
+                            lineHeight: "1.2",
                         }}
                     >
                         {title}
                     </h2>
 
-                    <h3 className="nes-text is-primary">Description</h3>
+                    <h3
+                        className="nes-text is-primary"
+                        style={{
+                            fontSize: "1rem",
+                            marginBottom: "8px",
+                        }}
+                    >
+                        Description
+                    </h3>
 
                     <p
                         style={{
                             whiteSpace: "pre-wrap",
-                            lineHeight: "1.8",
+                            lineHeight: "1.55",
+                            fontSize: ".92rem",
+                            marginBottom: "12px",
                         }}
                     >
                         {description}
                     </p>
 
-                    <hr />
+                    <hr
+                        style={{
+                            margin: "14px 0",
+                        }}
+                    />
 
-                    <h3 className="nes-text is-warning">Sample Input</h3>
+                    <h3
+                        className="nes-text is-warning"
+                        style={{
+                            fontSize: "1rem",
+                            marginBottom: "8px",
+                        }}
+                    >
+                        Sample Input
+                    </h3>
 
                     <pre
                         style={{
                             whiteSpace: "pre-wrap",
+                            fontSize: ".88rem",
+                            lineHeight: "1.45",
+                            margin: 0,
                         }}
                     >
                         {sampleInput}
                     </pre>
 
-                    <hr />
+                    <hr
+                        style={{
+                            margin: "14px 0",
+                        }}
+                    />
 
-                    <h3 className="nes-text is-error">Sample Output</h3>
+                    <h3
+                        className="nes-text is-error"
+                        style={{
+                            fontSize: "1rem",
+                            marginBottom: "8px",
+                        }}
+                    >
+                        Sample Output
+                    </h3>
 
                     <pre
                         style={{
                             whiteSpace: "pre-wrap",
+                            fontSize: ".88rem",
+                            lineHeight: "1.45",
+                            margin: 0,
                         }}
                     >
                         {sampleOutput}
                     </pre>
 
-                    <hr />
+                    <hr
+                        style={{
+                            margin: "16px 0",
+                        }}
+                    />
 
                     <button
                         className="nes-btn is-primary"
                         style={{
-                            marginTop: "20px",
+                            marginTop: "6px",
                         }}
                         onClick={() => setShowTestcaseForm(!showTestcaseForm)}
                     >
@@ -405,24 +525,31 @@ export default function ProblemPage() {
                         <div
                             className="nes-container is-rounded"
                             style={{
-                                marginTop: "25px",
+                                marginTop: "18px",
+                                padding: "18px",
                             }}
                         >
-                            <h3 className="nes-text is-success">
+                            <h3
+                                className="nes-text is-success"
+                                style={{
+                                    marginBottom: "12px",
+                                    fontSize: "1rem",
+                                }}
+                            >
                                 Contribute Test Case
                             </h3>
 
                             <div
                                 className="nes-field"
                                 style={{
-                                    marginTop: "20px",
+                                    marginTop: "10px",
                                 }}
                             >
                                 <label>Sample Input</label>
 
                                 <textarea
                                     className="nes-textarea is-dark"
-                                    rows={6}
+                                    rows={5}
                                     value={testcaseInput}
                                     onChange={(e) =>
                                         setTestcaseInput(e.target.value)
@@ -433,14 +560,14 @@ export default function ProblemPage() {
                             <div
                                 className="nes-field"
                                 style={{
-                                    marginTop: "20px",
+                                    marginTop: "14px",
                                 }}
                             >
                                 <label>Sample Output</label>
 
                                 <textarea
                                     className="nes-textarea is-dark"
-                                    rows={6}
+                                    rows={5}
                                     value={testcaseOutput}
                                     onChange={(e) =>
                                         setTestcaseOutput(e.target.value)
@@ -451,7 +578,7 @@ export default function ProblemPage() {
                             <button
                                 className="nes-btn is-success"
                                 style={{
-                                    marginTop: "25px",
+                                    marginTop: "18px",
                                 }}
                                 onClick={submitTestcase}
                                 disabled={testcaseSubmitting}
@@ -463,7 +590,6 @@ export default function ProblemPage() {
                         </div>
                     )}
                 </div>
-
                 {/* RIGHT PANEL */}
 
                 <div
@@ -471,10 +597,18 @@ export default function ProblemPage() {
                     style={{
                         display: "flex",
                         flexDirection: "column",
+                        padding: "14px",
                         overflow: "hidden",
-                        padding: "20px",
+                        minHeight: 0,
                     }}
                 >
+                    <p
+                        className="title"
+                        style={{
+                            fontSize: ".9rem",
+                        }}
+                    ></p>
+
                     {/* Toolbar */}
 
                     <div
@@ -482,15 +616,15 @@ export default function ProblemPage() {
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            gap: "20px",
+                            gap: "10px",
+                            marginBottom: "10px",
                             flexWrap: "wrap",
-                            marginBottom: "20px",
                         }}
                     >
                         <div
                             style={{
                                 display: "flex",
-                                gap: "15px",
+                                gap: "10px",
                                 alignItems: "center",
                             }}
                         >
@@ -504,10 +638,6 @@ export default function ProblemPage() {
                                     <option value="python">Python</option>
 
                                     <option value="go">Go</option>
-
-                                    <option value="javascript">
-                                        JavaScript
-                                    </option>
                                 </select>
                             </div>
 
@@ -530,7 +660,7 @@ export default function ProblemPage() {
                         <div
                             style={{
                                 display: "flex",
-                                gap: "15px",
+                                gap: "10px",
                             }}
                         >
                             <button
@@ -551,11 +681,14 @@ export default function ProblemPage() {
                         </div>
                     </div>
 
+                    {/* EDITOR */}
+
                     <div
                         style={{
                             flex: 1,
                             minHeight: 0,
                             border: "3px solid white",
+                            borderRadius: "6px",
                             overflow: "hidden",
                         }}
                     >
@@ -577,13 +710,41 @@ export default function ProblemPage() {
                                 minimap: {
                                     enabled: false,
                                 },
-                                fontSize: 16,
+
+                                fontSize: 15,
+
                                 automaticLayout: true,
+
                                 scrollBeyondLastLine: false,
+
                                 wordWrap: "on",
+
                                 roundedSelection: false,
+
+                                smoothScrolling: true,
+
+                                cursorBlinking: "smooth",
+
+                                cursorSmoothCaretAnimation: "on",
+
+                                renderLineHighlight: "all",
+
+                                lineNumbersMinChars: 3,
+
+                                glyphMargin: false,
+
+                                folding: true,
+
+                                bracketPairColorization: {
+                                    enabled: true,
+                                },
+
+                                guides: {
+                                    bracketPairs: true,
+                                },
+
                                 padding: {
-                                    top: 15,
+                                    top: 10,
                                 },
                             }}
                         />
@@ -592,26 +753,68 @@ export default function ProblemPage() {
 
                     <div
                         style={{
+                            marginTop: "10px",
                             display: "flex",
                             justifyContent: "space-between",
                             alignItems: "center",
-                            marginTop: "15px",
+                            minHeight: "38px",
                         }}
                     >
                         <div
                             style={{
                                 display: "flex",
                                 alignItems: "center",
-                                gap: "25px",
+                                gap: "18px",
+                                flexWrap: "nowrap",
                             }}
                         >
-                            <h3 className="nes-text is-warning">Console</h3>
+                            <span
+                                className="nes-text is-warning"
+                                style={{
+                                    fontSize: ".98rem",
+                                    fontWeight: 700,
+                                }}
+                            >
+                                Console
+                            </span>
 
-                            <span className="nes-text is-success">{score}</span>
+                            <span
+                                className="nes-text is-success"
+                                style={{
+                                    fontSize: ".88rem",
+                                }}
+                            >
+                                Score:
+                                <span
+                                    style={{
+                                        marginLeft: "6px",
+                                    }}
+                                >
+                                    {score}
+                                </span>
+                            </span>
+
+                            <span
+                                className="nes-text is-primary"
+                                style={{
+                                    fontSize: ".88rem",
+                                }}
+                            >
+                                <span
+                                    style={{
+                                        marginLeft: "6px",
+                                    }}
+                                >
+                                    {runtime} ms
+                                </span>
+                            </span>
                         </div>
 
                         <button
                             className="nes-btn is-primary"
+                            style={{
+                                padding: "4px 12px",
+                            }}
                             onClick={() => setConsoleOpen(!consoleOpen)}
                         >
                             {consoleOpen ? "Hide" : "Show"}
@@ -620,23 +823,37 @@ export default function ProblemPage() {
 
                     {/* Console */}
 
-                    {consoleOpen && (
+                    <div
+                        style={{
+                            marginTop: "10px",
+                            height: consoleOpen ? "145px" : "0px",
+                            overflow: "hidden",
+                            transition: "height .25s ease",
+                        }}
+                    >
                         <div
                             className="nes-container is-dark"
                             style={{
-                                marginTop: "15px",
-                                height: "220px",
+                                height: "145px",
                                 overflowY: "auto",
                                 overflowX: "hidden",
-                                whiteSpace: "pre-wrap",
-                                wordBreak: "break-word",
-                                fontFamily: "monospace",
-                                padding: "18px",
+                                padding: "14px",
                             }}
                         >
-                            {consoleText}
+                            <pre
+                                style={{
+                                    margin: 0,
+                                    whiteSpace: "pre-wrap",
+                                    wordBreak: "break-word",
+                                    fontFamily: "monospace",
+                                    fontSize: ".84rem",
+                                    lineHeight: "1.45",
+                                }}
+                            >
+                                {consoleText}
+                            </pre>
                         </div>
-                    )}
+                    </div>
                 </div>
             </div>
         </main>
