@@ -119,7 +119,9 @@ export default function Home() {
                     </Link>
                 </div>
 
-                <button className="nes-btn is-primary">{username}</button>
+                <Link href="/profile">
+                    <button className="nes-btn is-primary">{username}</button>
+                </Link>
             </nav>
             {/* MAIN CONTENT */}
 

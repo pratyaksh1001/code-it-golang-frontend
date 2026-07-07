@@ -381,14 +381,9 @@ export default function ProblemPage() {
                     </Link>
                 </div>
 
-                <button
-                    className="nes-btn is-primary"
-                    style={{
-                        padding: "6px 14px",
-                    }}
-                >
-                    {username}
-                </button>
+                <Link href="/profile">
+                    <button className="nes-btn is-primary">{username}</button>
+                </Link>
             </nav>
 
             <div
