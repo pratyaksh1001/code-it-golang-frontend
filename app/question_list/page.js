@@ -15,9 +15,11 @@ export default function Problems() {
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(false);
 
+    const [showTagDropdown, setShowTagDropdown] = useState(false);
+
     useEffect(() => {
-        setUsername(Cookies.get("username") || "Player");
         setMounted(true);
+        setUsername(Cookies.get("username") || "Player");
 
         fetchTags();
         fetchQuestions("", []);
@@ -26,7 +28,6 @@ export default function Problems() {
     async function fetchTags() {
         try {
             const res = await api.get("/tags");
-
             setTags(Array.isArray(res.data.tags) ? res.data.tags : []);
         } catch (err) {
             console.error(err);
@@ -39,11 +40,9 @@ export default function Problems() {
 
         try {
             const res = await api.post("/question_list", {
-                query: query,
+                query,
                 tags: selected,
             });
-
-            console.log(res.data);
 
             if (Array.isArray(res.data.list)) {
                 setQuestions(res.data.list);
@@ -83,14 +82,14 @@ export default function Problems() {
             style={{
                 width: "100vw",
                 height: "100vh",
-                padding: "20px",
+                padding: "18px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "20px",
+                gap: "16px",
                 overflow: "hidden",
             }}
         >
-            {/* Navbar */}
+            {/* ================= NAVBAR ================= */}
 
             <nav
                 className="nes-container is-dark"
@@ -98,15 +97,13 @@ export default function Problems() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    padding: "18px 24px",
+                    padding: "16px 22px",
                     flexShrink: 0,
                 }}
             >
                 <h2
                     className="nes-text is-success"
-                    style={{
-                        margin: 0,
-                    }}
+                    style={{ margin: 0 }}
                 >
                     CODE-IT
                 </h2>
@@ -114,16 +111,14 @@ export default function Problems() {
                 <div
                     style={{
                         display: "flex",
-                        gap: "35px",
+                        gap: "32px",
                         alignItems: "center",
                     }}
                 >
                     <Link
                         href="/home"
                         className="nes-text is-primary"
-                        style={{
-                            textDecoration: "none",
-                        }}
+                        style={{ textDecoration: "none" }}
                     >
                         Home
                     </Link>
@@ -131,9 +126,7 @@ export default function Problems() {
                     <Link
                         href="/question_list"
                         className="nes-text is-warning"
-                        style={{
-                            textDecoration: "none",
-                        }}
+                        style={{ textDecoration: "none" }}
                     >
                         Problems
                     </Link>
@@ -141,9 +134,7 @@ export default function Problems() {
                     <Link
                         href="/contests"
                         className="nes-text is-success"
-                        style={{
-                            textDecoration: "none",
-                        }}
+                        style={{ textDecoration: "none" }}
                     >
                         Contests
                     </Link>
@@ -151,194 +142,315 @@ export default function Problems() {
                     <Link
                         href="/leaderboard"
                         className="nes-text is-error"
-                        style={{
-                            textDecoration: "none",
-                        }}
+                        style={{ textDecoration: "none" }}
                     >
                         Leaderboard
                     </Link>
                 </div>
 
                 <Link href="/profile">
-                    <button className="nes-btn is-primary">{username}</button>
+                    <button className="nes-btn is-primary">
+                        {username}
+                    </button>
                 </Link>
             </nav>
 
-            {/* Search */}
+            {/* ================= SEARCH ================= */}
 
             <div
                 className="nes-container is-dark"
                 style={{
                     flexShrink: 0,
+                    padding: "14px 18px",
                 }}
             >
                 <div
                     style={{
                         display: "flex",
-                        gap: "15px",
+                        alignItems: "center",
+                        gap: "10px",
+                        position: "relative",
                     }}
                 >
                     <input
                         className="nes-input is-dark"
                         placeholder="Search problems..."
                         value={search}
-                        onChange={(e) => setSearch(e.target.value)}
+                        onChange={(e) =>
+                            setSearch(e.target.value)
+                        }
+                        style={{
+                            flex: 1,
+                        }}
                     />
+
+                    <button
+                        className="nes-btn is-primary"
+                        style={{
+                            minWidth: "110px",
+                            fontSize: "12px",
+                            padding: "8px 12px",
+                        }}
+                        onClick={() =>
+                            setShowTagDropdown(
+                                !showTagDropdown
+                            )
+                        }
+                    >
+                        Tags ▼
+                    </button>
 
                     <button
                         className="nes-btn is-success"
                         onClick={handleSearch}
                     >
-                        SEARCH
+                        Search
                     </button>
+
+                    {showTagDropdown && (
+                        <div
+                            className="nes-container is-dark"
+                            style={{
+                                position: "absolute",
+                                top: "58px",
+                                right: "120px",
+                                width: "220px",
+                                maxHeight: "240px",
+                                overflowY: "auto",
+                                zIndex: 100,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "10px",
+                            }}
+                        >
+                            {tags.map((tag) => (
+                                <label
+                                    key={tag}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "10px",
+                                        cursor: "pointer",
+                                    }}
+                                >
+                                    <input
+                                        type="checkbox"
+                                        className="nes-checkbox"
+                                        checked={selectedTags.includes(
+                                            tag
+                                        )}
+                                        onChange={() =>
+                                            toggleTag(tag)
+                                        }
+                                    />
+
+                                    <span
+                                        style={{
+                                            fontSize: "13px",
+                                        }}
+                                    >
+                                        {tag}
+                                    </span>
+                                </label>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
-                <div
-                    style={{
-                        display: "flex",
-                        flexWrap: "wrap",
-                        gap: "10px",
-                        marginTop: "20px",
-                    }}
-                >
-                    {tags.map((tag) => (
-                        <button
-                            key={tag}
-                            className={`nes-btn ${
-                                selectedTags.includes(tag)
-                                    ? "is-success"
-                                    : "is-primary"
-                            }`}
-                            onClick={() => toggleTag(tag)}
-                        >
-                            {tag}
-                        </button>
-                    ))}
-                </div>
+                {selectedTags.length > 0 && (
+                    <div
+                        style={{
+                            display: "flex",
+                            flexWrap: "wrap",
+                            gap: "8px",
+                            marginTop: "10px",
+                        }}
+                    >
+                        {selectedTags.map((tag) => (
+                            <button
+                                key={tag}
+                                className="nes-btn is-success"
+                                style={{
+                                    fontSize: "11px",
+                                    padding: "2px 8px",
+                                }}
+                                onClick={() =>
+                                    toggleTag(tag)
+                                }
+                            >
+                                {tag} ✕
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
-            {/* Question List */}
+            {/* ================= QUESTIONS ================= */}
 
             <div
                 style={{
                     flex: 1,
                     overflowY: "auto",
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: "20px",
+                    display: "grid",
+                    gridTemplateColumns:
+                        "repeat(auto-fit,minmax(430px,1fr))",
+                    gap: "16px",
+                    alignContent: "start",
+                    paddingRight: "4px",
                 }}
             >
-                {loading ? (
+            {loading ? (
+                <div
+                    className="nes-container is-dark"
+                    style={{
+                        gridColumn: "1 / -1",
+                        textAlign: "center",
+                        padding: "40px",
+                    }}
+                >
+                    <h2 className="nes-text is-primary">
+                        Loading Problems...
+                    </h2>
+                </div>
+            ) : questions.length === 0 ? (
+                <div
+                    className="nes-container is-dark"
+                    style={{
+                        gridColumn: "1 / -1",
+                        textAlign: "center",
+                        padding: "40px",
+                    }}
+                >
+                    <h2 className="nes-text is-error">
+                        No Problems Found
+                    </h2>
+                </div>
+            ) : (
+                questions.map((question, index) => (
                     <div
-                        className="nes-container is-dark"
+                        key={
+                            question.id ??
+                            question.qid ??
+                            question.title ??
+                            index
+                        }
+                        className="nes-container is-dark with-title"
                         style={{
-                            textAlign: "center",
-                            padding: "40px",
+                            minHeight: "185px",
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "space-between",
+                            padding: "14px",
                         }}
                     >
-                        <h2 className="nes-text is-primary">
-                            Loading Problems...
-                        </h2>
-                    </div>
-                ) : questions.length === 0 ? (
-                    <div
-                        className="nes-container is-dark"
-                        style={{
-                            textAlign: "center",
-                            padding: "40px",
-                        }}
-                    >
-                        <h2 className="nes-text is-error">No Problems Found</h2>
-                    </div>
-                ) : (
-                    questions.map((question, index) => (
+                        <div>
+                            <p
+                                className="title"
+                                style={{
+                                    fontSize: "18px",
+                                    marginBottom: "8px",
+                                    wordBreak: "break-word",
+                                }}
+                            >
+                                {question.title ??
+                                    question.question ??
+                                    "Untitled Question"}
+                            </p>
+
+                            {question.difficulty && (
+                                <span
+                                    className={`nes-text ${
+                                        question.difficulty === "Easy"
+                                            ? "is-success"
+                                            : question.difficulty ===
+                                              "Medium"
+                                            ? "is-warning"
+                                            : "is-error"
+                                    }`}
+                                    style={{
+                                        fontSize: "13px",
+                                    }}
+                                >
+                                    {question.difficulty}
+                                </span>
+                            )}
+
+                            {Array.isArray(question.tags) &&
+                                question.tags.length > 0 && (
+                                    <div
+                                        style={{
+                                            display: "flex",
+                                            flexWrap: "wrap",
+                                            gap: "6px",
+                                            marginTop: "12px",
+                                        }}
+                                    >
+                                        {question.tags.map(
+                                            (tag, i) => (                                                <button
+                                                key={`${tag}-${i}`}
+                                                className="nes-btn is-primary"
+                                                style={{
+                                                    fontSize: "10px",
+                                                    padding: "2px 7px",
+                                                    cursor: "default",
+                                                    minHeight: "28px",
+                                                    lineHeight: 1.2,
+                                                }}
+                                            >
+                                                {tag}
+                                            </button>
+                                        ))
+                                    }
+                                </div>
+                            )}
+                        </div>
+
                         <div
-                            key={
-                                question.id ??
-                                question.qid ??
-                                question.title ??
-                                index
-                            }
-                            className="nes-container is-dark with-title"
                             style={{
                                 display: "flex",
                                 justifyContent: "space-between",
-                                alignItems: "center",
-                                gap: "20px",
+                                alignItems: "flex-end",
+                                marginTop: "14px",
                             }}
                         >
                             <div
                                 style={{
-                                    flex: 1,
+                                    fontSize: "12px",
+                                    opacity: 0.75,
                                 }}
                             >
-                                <p className="title">
-                                    {question.title ??
-                                        question.question ??
-                                        "Untitled Question"}
-                                </p>
-
-                                {question.difficulty && (
-                                    <p
-                                        className={`nes-text ${
-                                            question.difficulty === "Easy"
-                                                ? "is-success"
-                                                : question.difficulty ===
-                                                    "Medium"
-                                                  ? "is-warning"
-                                                  : "is-error"
-                                        }`}
-                                    >
-                                        {question.difficulty}
-                                    </p>
-                                )}
-
-                                {Array.isArray(question.tags) &&
-                                    question.tags.length > 0 && (
-                                        <div
-                                            style={{
-                                                display: "flex",
-                                                flexWrap: "wrap",
-                                                gap: "10px",
-                                                marginTop: "15px",
-                                            }}
-                                        >
-                                            {question.tags.map((tag, i) => (
-                                                <button
-                                                    key={`${tag}-${i}`}
-                                                    className="nes-btn is-primary"
-                                                    style={{
-                                                        fontSize: "12px",
-                                                        padding: "4px 12px",
-                                                        cursor: "default",
-                                                        whiteSpace: "normal",
-                                                        wordBreak: "break-word",
-                                                        overflowWrap:
-                                                            "anywhere",
-                                                    }}
-                                                >
-                                                    {tag}
-                                                </button>
-                                            ))}
-                                        </div>
-                                    )}
+                                ID:{" "}
+                                {question.id ??
+                                    question.qid ??
+                                    index}
                             </div>
 
                             <Link
                                 href={`/problem/${
-                                    question.id ?? question.qid ?? index
+                                    question.id ??
+                                    question.qid ??
+                                    index
                                 }`}
                                 style={{
                                     textDecoration: "none",
                                 }}
                             >
-                                <button className="nes-btn is-success">
+                                <button
+                                    className="nes-btn is-success"
+                                    style={{
+                                        padding:
+                                            "6px 14px",
+                                        fontSize:
+                                            "12px",
+                                    }}
+                                >
                                     Solve →
                                 </button>
                             </Link>
                         </div>
-                    ))
-                )}
+                    </div>
+                ))
+            )}
             </div>
         </main>
     );

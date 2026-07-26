@@ -9,6 +9,10 @@ body {
     background: #0d0d0d;
     font-family: "Press Start 2P", cursive;
 }
+.lockedCode{
+    opacity:.65;
+    background:rgba(255,255,255,.04);
+}
 
 /* CRT Scanlines */
 body::before {
